@@ -2,7 +2,10 @@
 
 ## Description
 
-Tool to convert.
+Tool to convert source files to dbc archives. Currently the following formats are supported:
+
+- source exports databricks
+- jupyter notebooks (scala and python)
 
 ## Installation
 
