@@ -1,11 +1,11 @@
 import json
-import os
 import random
 import re
 import tempfile
 import uuid
 from pathlib import Path
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
+import itertools
 
 
 class UnsupportedFileTypeException(Exception):
@@ -29,7 +29,7 @@ class DatabricksConvert:
             )
         else:
             self._convert_directory(self.input_path, self.temp_path)
-        print(self.output_type)
+
         if self.output_type == "dbc":
             self._create_zip(
                 self.temp_path,
@@ -41,7 +41,7 @@ class DatabricksConvert:
         Recursively converts files into databricks json preserving folder structure.
         """
         for input_file in input_path.glob("**/*.*"):
-            if input_file.is_dir():
+            if input_file.is_dir() or input_file.parent.stem.startswith("."):
                 continue
             output_file = self.temp_path.joinpath(
                 input_file.relative_to(input_path.parent)
@@ -156,13 +156,18 @@ class DatabricksConvert:
         """
         Zips file to create the .dbc archive
         """
+
+        def _get_directories(p):
+            p = p.parent
+            while p != input_path:
+                yield p.relative_to(input_path)
+                p = p.parent
+
         directories = list(
             set(
-                [
-                    x.parent.relative_to(input_path)
-                    for x in input_path.glob("**/*.*")
-                    if x.is_dir() and len(list(x.iterdir())) > 0
-                ]
+                itertools.chain(
+                    *[_get_directories(x) for x in input_path.glob("**/*.*")]
+                )
             )
         )
         output_file.parent.mkdir(parents=True, exist_ok=True)
@@ -175,8 +180,6 @@ class DatabricksConvert:
                 zipf.writestr(zi, "")
 
             for path in input_path.glob("**/*.*"):
-                if path.is_dir():
-                    continue
                 base_path = path.relative_to(input_path)
                 zi = ZipInfo(str(base_path))
                 zi.compress_type = ZIP_DEFLATED
