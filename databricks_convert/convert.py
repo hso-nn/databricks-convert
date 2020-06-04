@@ -50,7 +50,6 @@ class DatabricksConvert:
             self._convert_file(input_file, output_file)
 
     def _import_file(self, input_file):
-        print(input_file)
         content = input_file.read_text()
         if input_file.suffix in (".scala", ".py"):
             commands = re.split(
@@ -62,7 +61,7 @@ class DatabricksConvert:
             language = "python" if input_file.suffix == ".py" else "scala"
         elif input_file.suffix == ".ipynb":
             content = json.loads(content)
-            commands = ["\n".join(x["source"]) for x in content["cells"]]
+            commands = ["".join(x["source"]) for x in content["cells"]]
             language = content["metadata"]["language_info"]["name"]
         else:
             raise UnsupportedFileTypeException()
